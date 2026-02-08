@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription aux cours</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url('Image.jpeg') no-repeat center center fixed;
+            background-size: cover; /* l'image couvre tout l'écran */
+            text-align: center;
+            padding: 40px;
+         }
+        
+        h1, h2 { color: #d6e9f6; }
+        .btn-group button {
+            margin: 5px; padding: 10px 20px;
+            cursor: pointer; border: 1px solid #0077cc;
+            background: white; color: #0077cc; border-radius: 5px;
+        }
+        .btn-group button.selected { background: #0077cc; color: white; }
+        select, input, textarea, button {
+            margin-top: 10px; padding: 10px; font-size: 16px;
+            border-radius: 5px; border: 1px solid #0077cc;
+        }
+        .form-section { display: none; margin-top: 20px; text-align: left; max-width: 400px; margin-left:auto; margin-right:auto; }
+        label { display: block; margin-top: 15px; }
+        #result { margin-top: 20px; font-weight: bold; color: green; }
+    </style>
+</head>
+
+<body>
+
+<h1>Inscription aux cours</h1>
+
+<form id="registration-form" action="https://formspree.io/f/mjgevqrv" method="POST">
+
+    <h2>Matières :</h2>
+    <div class="btn-group" id="subjects">
+        <button type="button" data-value="Maths">Maths</button>
+        <button type="button" data-value="Physique">Physique</button>
+        <button type="button" data-value="Informatique">Informatique</button>
+    </div>
+
+    <h2>Statut :</h2>
+    <div class="btn-group" id="status">
+        <button type="button" data-value="Élève">Élève</button>
+        <button type="button" data-value="Étudiant">Étudiant</button>
+    </div>
+
+    <div id="class-container" class="form-section">
+        <h2>Choisissez votre classe :</h2>
+        <select id="class-select" name="classe"></select>
+    </div>
+
+    <div id="personal-info" class="form-section">
+        <h2>Informations personnelles :</h2>
+        <label>Nom : <input type="text" name="nom" required></label>
+        <label>Prénom : <input type="text" name="prenom" required></label>
+        <label>Ville : <input type="text" name="ville" required></label>
+        <label>Jours disponibles : <input type="text" name="jours"></label>
+        <label>Nombre de fois par semaine : <input type="number" name="frequence" min="1" max="7"></label>
+        <label>Numéro de téléphone : <input type="tel" name="telephone"></label>
+        <label>Email : <input type="email" name="email"></label>
+    </div>
+
+    <!-- Champs cachés pour les matières -->
+    <input type="hidden" name="matieres" id="hidden-subjects">
+
+    <button type="submit" id="validate">Valider</button>
+</form>
+
+<div id="result"></div>
+
+<script>
+    const selectedSubjects = new Set();
+    const subjectsButtons = document.querySelectorAll("#subjects button");
+    const classContainer = document.getElementById("class-container");
+    const personalInfo = document.getElementById("personal-info");
+    const classSelect = document.getElementById("class-select");
+    const statusButtons = document.querySelectorAll("#status button");
+
+    const classes = {
+        "Élève": ["CP","CE1","CE2","CM1","CM2","6ème","5ème","4ème","3ème","2nde","1ère","Terminale"],
+        "Étudiant": ["L1","L2","L3","M1","M2","Doctorat"]
+    };
+
+    let selectedStatus = null;
+
+    subjectsButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            btn.classList.toggle("selected");
+            const value = btn.getAttribute("data-value");
+            if(selectedSubjects.has(value)) selectedSubjects.delete(value);
+            else selectedSubjects.add(value);
+            personalInfo.style.display = (selectedSubjects.size > 0 && selectedStatus) ? "block" : "none";
+            document.getElementById("hidden-subjects").value = [...selectedSubjects].join(", ");
+        });
+    });
+
+    statusButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            statusButtons.forEach(b => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            selectedStatus = btn.getAttribute("data-value");
+            // remplir le select de classe
+            classSelect.innerHTML = "";
+            classes[selectedStatus].forEach(cl => {
+                const option = document.createElement("option");
+                option.value = cl; option.textContent = cl;
+                classSelect.appendChild(option);
+            });
+            classContainer.style.display = "block";
+            personalInfo.style.display = (selectedSubjects.size > 0) ? "block" : "none";
+        });
+    });
+
+    // Afficher message après soumission
+    document.getElementById("registration-form").addEventListener("submit", function(e){
+        e.preventDefault();
+        const form = e.target;
+        fetch(form.action, {
+            method: "POST",
+            body: new FormData(form),
+            headers: { 'Accept': 'application/json' }
+        }).then(response => {
+            if(response.ok) {
+                document.getElementById("result").textContent = "Formulaire envoyé avec succès !";
+                form.reset();
+                selectedSubjects.clear();
+                subjectsButtons.forEach(b => b.classList.remove("selected"));
+                classContainer.style.display = "none";
+                personalInfo.style.display = "none";
+            } else {
+                document.getElementById("result").textContent = "Erreur lors de l'envoi du formulaire.";
+            }
+        }).catch(error => {
+            document.getElementById("result").textContent = "Erreur lors de l'envoi du formulaire.";
+        });
+    });
+</script>
+
+</body>
+</html>
